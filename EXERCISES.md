@@ -4,6 +4,8 @@ You are going to re-implement this private publication happ, one exercise at a t
 
 These are the instructions for the first step, amenable to all the other steps:
 
+0. Run `nix develop`. This sets up your terminal with all the developer tooling necessary. Run ALL the commands below WITHIN this environment, otherwise they won't work.
+
 1. Run `EXERCISE=1 STEP=1 npm test`.
 
 - This is the error message you should see:
@@ -82,7 +84,7 @@ Reader->>+ReaderLobbyCell: store_capability_claim(author_pub_key, cap_secret)
 ReaderLobbyCell-->>-ReaderLobbyCell: create_cap_claim(cap_secret)
 Note over Author,Reader: From now on the reader is authorized to read the posts
 Reader->>+ReaderLobbyCell: read_posts_for_author(author_pub_key)
-ReaderLobbyCell->>+AuthorLobbyCell: call_remote(autor_pub_key, "request_read_private_publication_posts")
+ReaderLobbyCell->>+AuthorLobbyCell: call_remote(cap_secret, "request_read_private_publication_posts")
 AuthorLobbyCell-->>AuthorLobbyCell: call_info()
 AuthorLobbyCell-->>AuthorLobbyCell: extract private_publication_dna_hash from call_info.cap_grant
 AuthorLobbyCell->>+AuthorPrivatePublicationCell: call(private_publication_dna_hash, "read_all_posts")
@@ -114,7 +116,7 @@ Solve the next steps in the `private_publication_lobby` coordinator zome, in `dn
   - Make sure to return the actual error message from the `ZomeCallResponse` if the `call_remote` fails.
 - Return the result.
 
-4. Create a function `request_read_private_publication_posts` with no inputs that:
+4. Create a function `request_read_private_publication_posts` with no inputs that returns an `ExternResult<Vec<Record>>`. This function should:
 
 - Calls [call_info()](https://docs.rs/hdk/latest/hdk/info/fn.call_info.html) and extracts the capability grant that was used to call this function.
 - Converts the tag from the capability grant to a `DnaHash`, using 
@@ -126,7 +128,7 @@ let private_publication_dna_hash = DnaHash::from(
 );
 ```
 - Constructs the private publication cell id with `CellId::new(private_publication_dna_hash, agent_info()?.agent_latest_pubkey)`
-- Makes a [bridge call](https://docs.rs/hdk/latest/hdk/p2p/fn.call.html) to the private publication cell, zome name `posts`, and function name `get_all_posts`, and just returns its contents.
+- Makes a [bridge call](https://docs.rs/hdk/latest/hdk/p2p/fn.call.html) to the private publication cell, zome name `posts`, and function name `get_all_posts`, converts its result in to a `Vec<Record>`, and returns that.
 
 ## Exercise 2: Validation Rules
 
@@ -158,9 +160,10 @@ Go into `dnas/lobby/integrity_zomes/private_publication/src/properties.rs`:
 3. Add a `Properties` struct, with only a `progenitor` field of type `AgentPubKeyB64`.
 
 - Annotate this struct with `#[derive(Serialize, Deserialize, Debug, SerializedBytes)]`.
-- Create an extern function `progenitor` that doesn't have any input parameters and that returns the `AgentPubKey` for the progenitor of this DNA.
-  - Get the serialized properties with `dna_info()?.properties`.
+- Create an extern function `progenitor` that doesn't have any input parameters and that returns an `ExternResult<AgentPubKey>` with the `AgentPubKey` for the progenitor of this DNA.
+  - Get the serialized properties with `dna_info()?.modifiers.properties`.
   - Transform that serialized properties type into our `Properties` struct.
+    - You can deserialize any type that is annotated with `SerializedBytes` using `try_from`: `Properties::try_from(serialized_bytes).map_err(|err| wasm_error!(err))?` 
   - Convert the `AgentPubKeyB64` into an `AgentPubKey` with `AgentPubKey::from()`.
 
 Now go into `dnas/private_publication/integrity_zomes/private_publication/src/validation.rs`. There you can see boilerplate that allows for the genesis self-check and for different validations for the two kinds of entries present in that DNA.
