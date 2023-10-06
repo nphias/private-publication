@@ -1,5 +1,7 @@
 use hdi::prelude::*;
 
+use crate::properties::progenitor;
+
 // Uncomment this line
 // use crate::properties::progenitor;
 
@@ -17,7 +19,11 @@ pub fn validate_create_publication_role(
     action: EntryCreationAction,
     publication_role: PublicationRole,
 ) -> ExternResult<ValidateCallbackResult> {
-    Ok(ValidateCallbackResult::Valid)
+        if action.author().eq(&progenitor(())?){ 
+            return Ok(ValidateCallbackResult::Valid);
+        }
+    Ok(ValidateCallbackResult::Invalid(String::from("Only the progenitor can create roles")))
+
 }
 
 /** Validation that is already implemented, don't touch **/

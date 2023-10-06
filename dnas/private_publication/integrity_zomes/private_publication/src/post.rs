@@ -1,7 +1,7 @@
 use hdi::prelude::*;
 
 // Uncomment this line
-// use crate::{properties::progenitor, *};
+ use crate::{properties::progenitor, *};
 
 #[derive(Clone)]
 #[hdk_entry_helper]
@@ -18,8 +18,17 @@ pub fn validate_create_post(
     action: EntryCreationAction,
     post: Post,
 ) -> ExternResult<ValidateCallbackResult> {
-    Ok(ValidateCallbackResult::Valid)
+        let pub_role = PublicationRole { role: String::from("editor"), assignee: action.author().clone()};
+        let role_hash = hash_entry(pub_role)?;
+        let entry = must_get_entry(role_hash)?;
+    
+        //solution above might not be secure.. a bad actor might re-create the entry by another means
+        // alternative is to use a claim and cache entry's of the role type and then check by the agent's activity
+        // must_get_agent_activity(author, filter)
+        
+        return Ok(ValidateCallbackResult::Valid);
 }
+
 
 pub fn validate_update_post(
     action: Update,
@@ -27,7 +36,10 @@ pub fn validate_update_post(
     original_action: EntryCreationAction,
     original_post: Post,
 ) -> ExternResult<ValidateCallbackResult> {
-    Ok(ValidateCallbackResult::Valid)
+    if &action.author == original_action.author() {
+        return Ok(ValidateCallbackResult::Valid)
+    }
+    Ok(ValidateCallbackResult::Invalid("Only the creator can make updates".into()))
 }
 
 /** These validations are already implemeneted, don't touch **/
