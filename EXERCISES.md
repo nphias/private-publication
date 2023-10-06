@@ -82,7 +82,7 @@ AuthorLobbyCell-->>-Author: cap_secret
 Author->>Reader: "the author shares the cap_secret with the reader"
 Reader->>+ReaderLobbyCell: store_capability_claim(author_pub_key, cap_secret)
 ReaderLobbyCell-->>-ReaderLobbyCell: create_cap_claim(cap_secret)
-ReaderLobbyCell-->>-Reader: "cap_claim created"
+ReaderLobbyCell-->>Reader: "cap_claim created"
 Note over Author,Reader: From now on the reader is authorized to read the posts
 Reader->>+ReaderLobbyCell: read_posts_for_author(author_pub_key)
 ReaderLobbyCell->>+AuthorLobbyCell: call_remote(cap_secret, "request_read_private_publication_posts")
